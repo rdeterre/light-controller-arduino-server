@@ -25,6 +25,8 @@ static int t = 0;
 
 static int lightStatuses[LIGHT_COUNT];
 
+static int lightTargets[LIGHT_COUNT];
+
 static int outputs[LIGHT_COUNT] = {3, 5, 6};
 
 WebServer webserver(PREFIX, 80);
@@ -110,7 +112,7 @@ void formCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
         int light = strtoul(name + 1, NULL, 10);
         int val = strtoul(value, NULL, 10);
         if (val <= 100 && val >= 0)
-          lightStatuses[light] = val;
+          lightTargets[light] = val;
       }
     } while (repeat);
 
@@ -136,6 +138,7 @@ void setup()
   // default light values
   for (int i = 0; i < LIGHT_COUNT; ++i) {
     lightStatuses[i] = 0;
+    lightTargets[i] = 0;
   }
   
   // Pin modes
@@ -155,10 +158,23 @@ void loop()
   // process incoming connections one at a time forever
   webserver.processConnection();
   
+  // update light statuses relative to targets
+  for (int i = 0; i < LIGHT_COUNT; ++i) {
+    if (lightStatuses[i] > lightTargets[i]) {
+      lightStatuses[i] -= 1;
+    } else if (lightStatuses[i] < lightTargets[i]) {
+      lightStatuses[i] += 1;
+    }
+  }
+  
   // Set light statuses
   for (int i = 0; i < LIGHT_COUNT; ++i) {
     analogWrite(outputs[i], lightStatuses[i] * 2.55);
   }
+  
+  delay(500);
+  
+  
 //  for (int i = 0; i < LIGHT_COUNT; i++) {
 //    if (t < lightStatuses[i]) {
 //      digitalWrite(outputs[i], HIGH);
@@ -171,6 +187,8 @@ void loop()
 //  if ( ++t > 99 )
 //    t = 0;
 }
+
+
 /**
  * Divides a given PWM pin frequency by a divisor.
  * 
